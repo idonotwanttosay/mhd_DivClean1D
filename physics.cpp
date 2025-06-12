@@ -100,3 +100,60 @@ void initialize_peak_bx(FlowField& flow) {
         }
     }
 }
+
+// Initialize 2D Riemann problem from Dedner et al. (2002)
+void initialize_2d_riemann(FlowField& flow) {
+    const double gamma = 5.0/3.0;
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < flow.rho.nx; ++i) {
+        for (int j = 0; j < flow.rho.ny; ++j) {
+            double x = flow.rho.x0 + i * flow.rho.dx; // domain [-1,1]
+            double y = flow.rho.y0 + j * flow.rho.dy;
+
+            double rho, u, v, p, bx, by;
+
+            if (x > 0.0 && y > 0.0) {
+                rho = 0.9308;
+                u   = 1.4557 / rho;
+                v   = -0.4633 / rho;
+                bx  = 0.3501;
+                by  = 0.9830;
+                p   = 0.3050;
+            } else if (x < 0.0 && y > 0.0) {
+                rho = 1.0304;
+                u   = 1.5774 / rho;
+                v   = -1.0455 / rho;
+                bx  = 0.3501;
+                by  = 0.5078;
+                p   = 0.1576;
+            } else if (x < 0.0 && y < 0.0) {
+                rho = 1.0000;
+                u   = 1.7500 / rho;
+                v   = -1.0000 / rho;
+                bx  = 0.5642;
+                by  = 0.9830;
+                p   = 0.2539;
+            } else {
+                rho = 1.8887;
+                u   = 0.2334 / rho;
+                v   = -1.7422 / rho;
+                bx  = 0.5642;
+                by  = 0.9830;
+                p   = 0.4915;
+            }
+
+            flow.rho.data[i][j] = rho;
+            flow.u.data[i][j]   = u;
+            flow.v.data[i][j]   = v;
+            flow.p.data[i][j]   = p;
+            flow.bx.data[i][j]  = bx;
+            flow.by.data[i][j]  = by;
+            flow.psi.data[i][j] = 0.0;
+
+            double ke = 0.5 * rho * (u*u + v*v);
+            double me = 0.5 * (bx*bx + by*by);
+            flow.e.data[i][j] = p/(gamma-1.0) + ke + me;
+        }
+    }
+}

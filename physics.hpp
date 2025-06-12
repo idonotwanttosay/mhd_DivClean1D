@@ -7,3 +7,5 @@ void initialize_test_field(FlowField& flow);
 // Initial condition inspired by "Hyperbolic Divergence Cleaning for the MHD Equations"
 // Peak Bx problem: uniform state with a localized magnetic perturbation
 void initialize_peak_bx(FlowField& flow);
+// 2D Riemann problem from Dedner et al. (2002)
+void initialize_2d_riemann(FlowField& flow);
