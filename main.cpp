@@ -20,28 +20,36 @@ static std::string prepare_output_dir(){
 }
 
 int main(){
-    const int nx=256, ny=256; // higher resolution for peak Bx test
-    const double Lx=1.0, Ly=1.0;
-    const double dx=Lx/(nx-1), dy=Ly/(ny-1);
-    const int max_steps=1000;
-    const int output_every=20;
+    const int nx = 256, ny = 256;
+    const double Lx = 2.0, Ly = 2.0; // domain [-1,1]x[-1,1]
+    const double dx = Lx/(nx-1), dy = Ly/(ny-1);
+    const double cfl = 0.3;
+    const double t_end = 0.25;
+    const int output_every = 20;
 
     std::string out_dir = prepare_output_dir();
 
     AMRGrid amr(nx, ny, Lx, Ly, 1); // single level grid
-    FlowField flow(nx,ny,dx,dy);
-    initialize_peak_bx(flow);      // peak Bx initial condition
+    FlowField flow(nx, ny, dx, dy, -1.0, -1.0);
+    initialize_2d_riemann(flow);
     std::vector<FlowField> flows = {flow};
 
-    auto t0=std::chrono::high_resolution_clock::now();
-    for(int step=0; step<=max_steps; ++step){
-        double dt = compute_cfl_timestep(flows[0]);
+    auto t0 = std::chrono::high_resolution_clock::now();
+    double t = 0.0;
+    int step = 0;
+    while (t < t_end) {
+        double dt = compute_cfl_timestep(flows[0], cfl);
+        if (t + dt > t_end) dt = t_end - t;
 
-        solve_MHD(amr, flows, dt, 0.0, 0, 0.0); // full MHD update
+        solve_MHD(amr, flows, dt, 0.0, 0, 0.0);
 
-        if(step % output_every == 0){
+        t += dt;
+        step++;
+
+        if (step % output_every == 0) {
             auto [max_divB, L1_divB] = compute_divergence_errors(flows[0]);
             std::cout << "step " << std::setw(4) << step
+                      << " t=" << t
                       << " dt=" << dt
                       << " max_divB=" << max_divB
                       << " L1_divB=" << L1_divB << "\n";
