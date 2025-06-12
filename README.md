@@ -1,1 +1,1 @@
-# mhd_DivClean1D
+# mhd_DivClean2DRiemann
