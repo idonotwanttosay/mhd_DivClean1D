@@ -9,7 +9,9 @@
 static constexpr double ETA = 0.0;     // Magnetic diffusivity disabled for ideal MHD
 static constexpr double CH = 1.0;      // GLM wave speed
 static constexpr double CR = 0.18;     // GLM damping coefficient (improved value)
-static constexpr double gamma_gas = 1.4;
+// Adiabatic index for ideal MHD. The 2D Riemann problem described by
+// Dedner et al. (2002) uses gamma = 5/3.
+static constexpr double gamma_gas = 5.0/3.0;
 
 // Helper function: compute Laplacian
 static inline double laplacian(const Grid& g, int i, int j) {
@@ -176,10 +178,13 @@ double compute_cfl_timestep(const FlowField& flow, double cfl_number) {
             
             double cf = compute_fast_speed(rho, p, Bx, By);
             
+            // Include GLM wave speed when determining the stable timestep
             double dt_x = grid.dx / (std::abs(u) + cf);
             double dt_y = grid.dy / (std::abs(v) + cf);
-            
-            dt_min = std::min(dt_min, std::min(dt_x, dt_y));
+            double dt_chx = grid.dx / CH;
+            double dt_chy = grid.dy / CH;
+
+            dt_min = std::min({dt_min, dt_x, dt_y, dt_chx, dt_chy});
         }
     }
     
